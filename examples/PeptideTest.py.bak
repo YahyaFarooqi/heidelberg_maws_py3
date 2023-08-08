@@ -12,7 +12,7 @@ dipeptide.add_chain("NALA CALA", PROT)
 dipeptide.build()
 pep = dipeptide.chains[0]
 #dipeptide.minimize()
-print(("Starting Energy = %s" % dipeptide.get_energy()[0]))
+print("Starting Energy = %s" % dipeptide.get_energy()[0])
 
 file = open("dipeptide.pdb", "w")
 #Sample:

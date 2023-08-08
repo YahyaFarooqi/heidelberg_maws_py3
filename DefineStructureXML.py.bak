@@ -1,4 +1,4 @@
-from .Structure import Structure
+from Structure import Structure
 #from xml.etree.ElementTree import ElementTree, Element, SubElement, Comment, tostring, dump
 from lxml import etree
 
@@ -9,7 +9,7 @@ def WriteStructureXML(structure, path):
         Xresidue_path.text = structure.residue_path
         tree.append(Xresidue_path)
     Xaliases = etree.Element('alias')
-    for key, values in structure.alias.items():
+    for key, values in structure.alias.iteritems():
         Xalias = etree.Element('element')
         Xalias.set('name',key)
         Xalone = etree.Element('alone')

@@ -47,4 +47,4 @@ for key in good_angles:
 for element in emergy_map:
 	energy_map_file.write("%s%s%s%s: %s" % element)
 
-print(("Ratio = " + len(good_angles)/(360.)**(4)))
+print("Ratio = " + len(good_angles)/(360.)**(4))

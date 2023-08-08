@@ -6,12 +6,12 @@ from simtk import unit
 from mpmath import mp as math
 from collections import defaultdict
 import subprocess
-from .Prepare import makeLib
-from .helpers import angle as ang
-from .helpers import directed_angle as d_ang
-from .helpers import (angstrom,nostrom,kJ,noJ)
-from .LoadFrom import PDBStructure
-from .Structure import *
+from Prepare import makeLib
+from helpers import angle as ang
+from helpers import directed_angle as d_ang
+from helpers import (angstrom,nostrom,kJ,noJ)
+from LoadFrom import PDBStructure
+from Structure import *
 
 ## Represents a molecule chain, comprising multiple residues
 class Chain(object):

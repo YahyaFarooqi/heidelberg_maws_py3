@@ -42,7 +42,7 @@ def centerOfMass(positions):
 
 @jit
 def radius(center, positions):
-	return max(list(map(np.linalg.norm, np.asarray(positions) - np.asarray(center))))
+	return max(map(np.linalg.norm, np.asarray(positions) - np.asarray(center)))
 
 @jit
 def kullbackLeiblerDivergenceKernel(sample, reference_sample):

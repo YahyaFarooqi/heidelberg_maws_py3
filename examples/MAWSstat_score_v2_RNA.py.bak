@@ -1,30 +1,30 @@
 #MAWS is part of the sharksome software suite
 #This software is published under MIT license
-#COPYRIGHT 2017 Michael Jendrusch
+#COPYRIGHT 2016 Michael Jendrusch
 #Authors: Michael Jendrusch, Stefan Holderbach
 
 #VERSION Information
 #Note: This information should be updated with every technical change to ensure that
 #      every calculation can be linked to its software version.
-VERSION = "2.0"
-RELEASE_DATE = "2017"
-METHOD = "Kullback-Leibler"
+VERSION = "0.1"
+RELEASE_DATE = "2016-05-23"
+METHOD = "-E_min*S"
 
 import copy
 import numpy as np
 import argparse
 from datetime import datetime
-from .LoadFrom import XMLStructure
-from .helpers import nostrom
-from .Complex import Complex
-from .Structure import Structure
-from .Routines import ZPS, S
-from .Kernels import centerOfMass
+from LoadFrom import XMLStructure
+from helpers import nostrom
+from Complex import Complex
+from Structure import Structure
+from Routines import ZPS, S, ScoreThreshold
+from Kernels import centerOfMass, radius
 from collections import defaultdict
 from operator import itemgetter
 from simtk.openmm import unit
 from simtk.openmm import app
-from . import Space
+import Space
 
 #Parser
 parser = argparse.ArgumentParser()
@@ -50,7 +50,7 @@ if args.name:
 BETA = 0.01
 if args.beta:
 	BETA = args.beta
-FIRST_CHUNK_SIZE = 5000
+FIRST_CHUNK_SIZE = 20000
 if args.firstchunksize:
 	FIRST_CHUNK_SIZE = args.firstchunksize
 CHUNK_SIZE = 5000
@@ -59,7 +59,7 @@ if args.secondchunksize:
 N_NTIDES = 15
 if args.ntides:
 	N_NTIDES = args.ntides
-PDB_PATH = "/net/data.isilon/ag-reils/igem2015/testenv/silane.pdb"
+PDB_PATH = "/net/bq-lsdf/bioquant/ag-reils/igem2015/testenv/sharksome-suite/1gfl.pdb"
 if args.path:
 	PDB_PATH = args.path
 #N_CHUNKS = 1
@@ -95,19 +95,22 @@ cpx = Complex("leaprc.ff12SB")
 cpx.add_chain('', RNA)
 
 #Add a chain to the complex using a pdb file (e.g. "xylanase.pdb")
-cpx.add_chain_from_PDB(PDB_PATH,parameterized=False)
+cpx.add_chain_from_PDB(PDB_PATH,parameterized=True)
 
 #Build a complex with the pdb only, to get center of mass of the pdb --#
 c = Complex("leaprc.ff12SB")
 
-c.add_chain_from_PDB(PDB_PATH,parameterized=False)
+c.add_chain_from_PDB(PDB_PATH,parameterized=True)
 
 c.build()
+
+c.minimize()
 #----------------------------------------------------------------------#
-
 #Create a sampling Cube of Diameter 50. Angstroms around the pdb center of mass
-cube = Space.Cube(20., centerOfMass(np.asarray(nostrom(c.positions))))
-
+center = centerOfMass(np.asarray(nostrom(c.positions)))
+R = radius(center, np.asarray(nostrom(c.positions)))
+cube = Space.Cube(R + 5., center)
+en0 = c.get_energy()[0]
 #Create a sampling Space of the direct sum of N_ELEMENTS angles
 rotations = Space.NAngles(N_ELEMENTS)
 
@@ -131,9 +134,11 @@ for ntide in 'GAUC':
 	#Initialize the chain with a nucleotide
 	aptamer.create_sequence(ntide)
 	#Build the Complex
-        print("INTO LEAP ---------------------------------------------------------------------")
 	complex.build()
-        print("OUT OF LEAP -------------------------------------------------------------------")
+	currentCenter = centerOfMass(np.asarray(nostrom(complex.positions[complex.chains[1].start:])))
+	shift = currentCenter*unit.angstrom - centerOfMass(np.asarray(nostrom(c.positions)))*unit.angstrom
+	aptamer.translate_global(shift)
+	complex.positions = complex.positions[:complex.chains[1].start] + c.positions[:]
 	#Remember its initial positions
 	positions0 = complex.positions[:]
 	#For the number of samples
@@ -165,7 +170,7 @@ for ntide in 'GAUC':
 		#Reset positions
 		complex.positions = positions0[:]
 	#Calculate entropy
-	entropy = S(energies, beta=BETA)
+	entropy = ScoreThreshold(energies, BETA, 0)
 
 	#Performing outputs
 	pdblog = open("{0}_1_{1}.pdb".format(JOB_NAME,ntide),"w")
@@ -206,9 +211,7 @@ for i in range(N_NTIDES):
 			#Get our aptamer
 			aptamer = complex.chains[0]
 			aptamer.create_sequence(best_old_sequence)
-                        print("INTO LEAP ------------------------------------------------------------------------------")
 			complex.build()
-                        print("OUT OF LEAP ----------------------------------------------------------------------------")
 			#Readjust positions
 			complex.positions = best_old_positions[:]
 			if append:
@@ -217,13 +220,11 @@ for i in range(N_NTIDES):
 			else:
 				#Prepend new nucleotide
 				aptamer.prepend_sequence(ntide)
-                        print("INTO LEAP ------------------------------------------------------------------------------")
 			complex.rebuild()
-                        print("OUT OF LEAP ----------------------------------------------------------------------------")
 			## Optionally minimize or "shake" complex, to find lower energy local minimum
 			#not recommended! causes issues with proteins
-			#complex.minimize()
-			complex.pert_min(size=0.5)
+			complex.minimize()
+			#complex.pert_min(size=0.5)
 			#Remember positions
 			positions0 = complex.positions[:]
 
@@ -232,18 +233,20 @@ for i in range(N_NTIDES):
 				#Get random angles
 				rotation = rotations.generator()
 				#For everything forward
-				for j in range(N_ELEMENTS-1):
-					#Rotate the new nucleotide's bonds
-					if append:
+				if append:
+					for j in range(N_ELEMENTS-1):
+						#Rotate the new nucleotide's bonds
 						aptamer.rotate_in_residue(-1, j, rotation[j])
-					else:
-						aptamer.rotate_in_residue(0, j, rotation[j], reverse=True)
+				else:
+					for j in range(N_ELEMENTS - 2):
+						aptamer.rotate_in_residue(1, j, rotation[j], reverse=True)
 				#For everything backward (C3'-O3')
 				#Rotate the old nucleotides' bond
 				if append:
 					aptamer.rotate_in_residue(-2, 3, rotation[3])
 				else:
-					aptamer.rotate_in_residue(0, 3, rotation[3], reverse=True)
+					for j in range(N_ELEMENTS - 2, N_ELEMENTS):
+						aptamer.rotate_in_residue(0, j, rotation[j], reverse=True)
 				#Get energy
 				energy = complex.get_energy()[0]
 				#Check if best
@@ -256,7 +259,7 @@ for i in range(N_NTIDES):
 				#Reset positions
 				complex.positions = positions0[:]
 
-			entropy = S(energies, beta=BETA)
+			entropy = ScoreThreshold(energies, BETA, 0)
 
 			#outputs
 			pdblog = open("{0}_{1}_{2}.pdb".format(JOB_NAME, i+2, ntide), "w")

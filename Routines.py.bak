@@ -4,10 +4,10 @@ import numpy as np
 math.dps = 60
 
 def kullbackLeiblerDivergence(sample,reference_sample):
-	return -math.fsum(np.asarray(sample)*list(map(math.log,np.asarray(sample)/np.asarray(reference_sample))))
+	return -math.fsum(np.asarray(sample)*map(math.log,np.asarray(sample)/np.asarray(reference_sample)))
 
 def Entropy(sample):
-    return -math.fsum(list(map(math.fmul, np.asarray(sample), list(map(math.log, list(map(math.fmul, np.asarray(sample), [len(sample)]*len(sample))))))))
+    return -math.fsum(map(math.fmul, np.asarray(sample), map(math.log, map(math.fmul, np.asarray(sample), [len(sample)]*len(sample)))))
 
 def GoodEnergy(energy, threshold):
     if energy > threshold:
@@ -26,8 +26,8 @@ def ScoreThreshold(sample, beta, threshold):
     return result
 
 def ZPS(sample, beta=0.01):
-	Z = math.fsum(list(map(math.exp, list(map(math.fmul, [-beta]*len(sample), np.asarray(sample))))))
-	P = list(map(math.fdiv, list(map(math.exp, list(map(math.fmul, [-beta]*len(sample), np.asarray(sample))))), np.asarray([Z]*len(sample))))
+	Z = math.fsum(map(math.exp, map(math.fmul, [-beta]*len(sample), np.asarray(sample))))
+	P = map(math.fdiv, map(math.exp, map(math.fmul, [-beta]*len(sample), np.asarray(sample))), np.asarray([Z]*len(sample)))
 	S = Entropy(P)
 	return Z, P, S
 

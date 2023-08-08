@@ -5,8 +5,8 @@ from simtk import unit
 from mpmath import mp as math
 from collections import defaultdict
 import subprocess
-from .helpers import angle as ang
-from .helpers import (angstrom,nostrom,kJ,noJ)
+from helpers import angle as ang
+from helpers import (angstrom,nostrom,kJ,noJ)
 
 #Required for: Structure
 import xml.etree.ElementTree as XMLTree
@@ -338,23 +338,23 @@ class Structure(object):
         """
         if self.rotating_elements[residue_name] == [None]:
             self.rotating_elements[residue_name] = []
-        if isinstance(rotations[0],str):
+        if isinstance(rotations[0],basestring):
             for rotation in rotations:
                 self.rotating_elements[residue_name].append(rotation)
-        elif isinstance(rotations, str):
+        elif isinstance(rotations, basestring):
             self.rotating_elements[residue_name].append(rotation)
         else:
             raise ValueError("The input supplied is not a three component list specifying a rotation!")
         return self.rotating_elements
     
     def delete_rotation(self, residue_name, rotations):
-        if isinstance(rotations[0],str):
+        if isinstance(rotations[0],basestring):
             for rotation in rotations:
                 if rotation in self.rotating_elements[residue_name]:
                     self.rotating_elements[residue_name].remove(rotation)
                 else:
                     pass
-        elif isinstance(rotations, str):
+        elif isinstance(rotations, basestring):
             if rotation in self.rotating_elements[residue_name]:
                 self.rotating_elements[residue_name].remove(rotation)
             else:

@@ -14,17 +14,17 @@ import copy
 import numpy as np
 import argparse
 from datetime import datetime
-from .LoadFrom import XMLStructure
-from .helpers import nostrom
-from .Complex import Complex
-from .Structure import Structure
-from .Routines import ZPS, S
-from .Kernels import centerOfMass
+from LoadFrom import XMLStructure
+from helpers import nostrom
+from Complex import Complex
+from Structure import Structure
+from Routines import ZPS, S
+from Kernels import centerOfMass
 from collections import defaultdict
 from operator import itemgetter
 from simtk.openmm import unit
 from simtk.openmm import app
-from . import Space
+import Space
 
 #Parser
 parser = argparse.ArgumentParser()

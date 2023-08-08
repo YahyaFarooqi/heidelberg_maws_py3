@@ -1,5 +1,5 @@
-from .Complex import *
-from .Structure import *
+from Complex import *
+from Structure import *
 
 DNAresidues = ["DGN", "DAN", "DTN", "DCN",
                "DG", "DA", "DT", "DC", 
